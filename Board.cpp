@@ -125,7 +125,6 @@ void Board::togglePause() {
             }
         }
     }
-    cout << this->debug << endl;
 }
 
 

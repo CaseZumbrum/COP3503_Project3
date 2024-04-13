@@ -12,6 +12,8 @@
 #include "Tile.h"
 #include <map>
 #include "Board.h"
+#include <chrono>
+#include <ctime>
 
 
 using namespace std;
@@ -248,6 +250,144 @@ string welcomeScreen(){
     return username;
 }
 
+void leaderBoard(){
+    vector<sf::Drawable*> entities;
+
+    ifstream config("files/config.cfg");
+    string colString;
+    string rowString;
+    string mineString;
+    getline(config,colString);
+    getline(config, rowString);
+    getline(config,mineString);
+    int colCount = stoi(colString);
+    int rowCount = stoi(rowString);
+    int mineCount = stoi(mineString);
+    int width = colCount*16;
+    int height = rowCount*16+50;
+    sf::RenderWindow welcomeWindow(sf::VideoMode(width, height ), "Leaderboard");
+    ifstream leaderReader("files/leaderboard.txt");
+    string nameIndex;
+    string timeIndex;
+    string leaderString = "";
+    int count = 1;
+    while(getline(leaderReader,timeIndex,',')){
+        getline(leaderReader,nameIndex);
+        leaderString += to_string(count) + ".\t" + timeIndex + "\t" + nameIndex + "\n\n";
+        count++;
+    }
+
+    sf::Font font;
+    font.loadFromFile("files/font.ttf");
+    sf::Text leaderText;
+    leaderText.setFont(font);
+    leaderText.setString(leaderString);
+    leaderText.setCharacterSize(18);
+    leaderText.setStyle(sf::Text::Bold);
+    setText(leaderText,width/2,height/2 + 20);
+    entities.push_back(&leaderText);
+
+    sf::Text title;
+    title.setFont(font);
+    title.setString("LEADERBOARD");
+    title.setCharacterSize(20);
+    title.setStyle(sf::Text::Bold | sf::Text::Underlined);
+    setText(title,width/2,height/2 - 120);
+    entities.push_back(&title);
+
+    while(welcomeWindow.isOpen()) {
+        sf::Event event;
+        while (welcomeWindow.pollEvent(event)) {
+            if (event.type == sf::Event::Closed) {
+                welcomeWindow.close();
+            }
+        }
+        welcomeWindow.clear(sf::Color::Blue); // credit to my friend
+        for(int i = 0; i < entities.size(); i++){
+            welcomeWindow.draw(*entities.at(i));
+        }
+        welcomeWindow.display();
+    }
+}
+
+void endleaderBoard(int sec, int min){
+    vector<sf::Drawable*> entities;
+
+    ifstream config("files/config.cfg");
+    string colString;
+    string rowString;
+    string mineString;
+    getline(config,colString);
+    getline(config, rowString);
+    getline(config,mineString);
+    int colCount = stoi(colString);
+    int rowCount = stoi(rowString);
+    int mineCount = stoi(mineString);
+    int width = colCount*16;
+    int height = rowCount*16+50;
+    sf::RenderWindow welcomeWindow(sf::VideoMode(width, height ), "Leaderboard");
+    ifstream leaderReader("files/leaderboard.txt");
+    string nameIndex;
+    string timeIndex;
+    string leaderString = "";
+    vector<string> times;
+    vector<string> names;
+    int count = 1;
+    while(getline(leaderReader,timeIndex,',')){
+        getline(leaderReader,nameIndex);
+        times.push_back(timeIndex);
+        names.push_back(nameIndex);
+        count++;
+    }
+
+    int position = -1;
+    for(int i = 0; i < times.size(); i++){
+        if(min < stoi(times.at(i).substr(0,2)) && sec < stoi(times.at(i).substr(3,2))){
+            position = i;
+            break;
+        }
+    }
+    cout << position << endl;
+
+
+    for(int i = 1; i <= times.size(); i++){
+
+        leaderString += to_string(i) + ".\t" + times.at(i-1) + "\t" + names.at(i-1) + "\n\n";
+
+    }
+
+    sf::Font font;
+    font.loadFromFile("files/font.ttf");
+    sf::Text leaderText;
+    leaderText.setFont(font);
+    leaderText.setString(leaderString);
+    leaderText.setCharacterSize(18);
+    leaderText.setStyle(sf::Text::Bold);
+    setText(leaderText,width/2,height/2 + 20);
+    entities.push_back(&leaderText);
+
+    sf::Text title;
+    title.setFont(font);
+    title.setString("LEADERBOARD");
+    title.setCharacterSize(20);
+    title.setStyle(sf::Text::Bold | sf::Text::Underlined);
+    setText(title,width/2,height/2 - 120);
+    entities.push_back(&title);
+
+    while(welcomeWindow.isOpen()) {
+        sf::Event event;
+        while (welcomeWindow.pollEvent(event)) {
+            if (event.type == sf::Event::Closed) {
+                welcomeWindow.close();
+            }
+        }
+        welcomeWindow.clear(sf::Color::Blue); // credit to my friend
+        for(int i = 0; i < entities.size(); i++){
+            welcomeWindow.draw(*entities.at(i));
+        }
+        welcomeWindow.display();
+    }
+}
 
 
 
@@ -255,12 +395,15 @@ int main() {
     //string username = welcomeScreen();
     //cout << username << endl;
 
+    auto start = std::chrono::system_clock::now();
+    std::chrono::duration<double> elapsed_seconds;
 
 
     vector<sf::Drawable*> entities;
     bool firstClick = true;
     bool won = false;
     bool lost = false;
+    bool pauseBool = false;
 
     ifstream config("files/config.cfg");
     string colString;
@@ -303,6 +446,37 @@ int main() {
     leaderboard.setPosition((colCount*32)-176,32*(rowCount+0.5));
     entities.push_back(&leaderboard);
 
+    int ones;
+    int tens;
+    int hundreds;
+    bool negative = false;
+    sf::Sprite onesSprite(assets.at("digits"));
+    onesSprite.setPosition(33+21+21,32*(rowCount+0.5)+16);
+    sf::Sprite tensSprite(assets.at("digits"));
+    tensSprite.setPosition(33+21,32*(rowCount+0.5) + 16);
+    sf::Sprite hundredsSprite(assets.at("digits"));
+    hundredsSprite.setPosition(33,32*(rowCount+0.5) + 16);
+    sf::Sprite negSprite(assets.at("digits"),sf::IntRect(21*10,0,21,32));
+    negSprite.setPosition(12,32*(rowCount+0.5) + 16);
+    entities.push_back(&onesSprite);
+    entities.push_back(&tensSprite);
+    entities.push_back(&hundredsSprite);
+
+    int secs;
+    int mins;
+    sf::Sprite secOnes(assets.at("digits"));
+    secOnes.setPosition(colCount*32 - 54 + 21,32*(rowCount+0.5)+16);
+    sf::Sprite secTens(assets.at("digits"));
+    secTens.setPosition(colCount*32 - 54,32*(rowCount+0.5)+16);
+    sf::Sprite minOnes(assets.at("digits"));
+    minOnes.setPosition(colCount*32 - 97 + 21,32*(rowCount+0.5)+16);
+    sf::Sprite minTens(assets.at("digits"));
+    minTens.setPosition(colCount*32 - 97,32*(rowCount+0.5)+16);
+    entities.push_back(&secOnes);
+    entities.push_back(&secTens);
+    entities.push_back(&minOnes);
+    entities.push_back(&minTens);
+
 
     while(gameWindow.isOpen()) {
         sf::Event event;
@@ -333,6 +507,28 @@ int main() {
                                     pause.getPosition().y <= event.mouseButton.y &&
                                     pause.getPosition().y >= event.mouseButton.y - 64)) {
                             b.togglePause();
+                            pauseBool = !pauseBool;
+                        }
+                        else if ((leaderboard.getPosition().x <= event.mouseButton.x &&
+                                  leaderboard.getPosition().x >= event.mouseButton.x - 64 &&
+                                  leaderboard.getPosition().y <= event.mouseButton.y &&
+                                  leaderboard.getPosition().y >= event.mouseButton.y - 64)) {
+
+                            if(!pauseBool) {
+                                b.togglePause();
+                                gameWindow.clear(sf::Color::White);
+                                for (int i = 0; i < entities.size(); i++) {
+                                    gameWindow.draw(*entities.at(i));
+                                }
+                                gameWindow.display();
+                                leaderBoard();
+                                b.togglePause();
+                            }
+                            else{
+                                leaderBoard();
+                            }
+                            start = chrono::system_clock::now();
+
                         }
                     } else if (event.mouseButton.button == 1) {
                         if ((int) event.mouseButton.x / 32 < colCount && (int) event.mouseButton.y / 32 < rowCount) {
@@ -340,21 +536,79 @@ int main() {
                             won = b.checkWin();
                             if(won){
                                 face.setTexture(assets.at("win"));
+
+                                if(b.numFlags < 0){
+                                    negative = true;
+                                    ones =-1* b.numFlags % 10;
+                                    tens = -1* ((int) b.numFlags / 10)%10;
+                                    hundreds = -1* (int) b.numFlags / 100;
+                                }
+                                else{
+                                    negative = false;
+                                    ones = b.numFlags % 10;
+                                    tens = ((int) b.numFlags / 10)%10;
+                                    hundreds = (int) b.numFlags / 100;
+
+                                }
+                                onesSprite.setTextureRect(sf::IntRect(21*ones,0,21,32));
+                                tensSprite.setTextureRect(sf::IntRect (21*tens,0,21,32));
+                                hundredsSprite.setTextureRect(sf::IntRect (21*hundreds,0,21,32));
+                                gameWindow.clear(sf::Color::White);
+                                for(int i = 0; i < entities.size(); i++){
+                                    gameWindow.draw(*entities.at(i));
+                                }
+                                gameWindow.display();
+                                endleaderBoard(((int) elapsed_seconds.count()) % 60,((int) elapsed_seconds.count()) / 60);
                             }
                         }
-                    } else if (event.mouseButton.button == 2) {
-                        b.togglePause();
                     }
                 }
+
+
             }
         }
 
+        //flag counter
+        if(b.numFlags < 0){
+            negative = true;
+            ones =-1* b.numFlags % 10;
+            tens = -1* ((int) b.numFlags / 10)%10;
+            hundreds = -1* (int) b.numFlags / 100;
+        }
+        else{
+            negative = false;
+            ones = b.numFlags % 10;
+            tens = ((int) b.numFlags / 10)%10;
+            hundreds = (int) b.numFlags / 100;
+
+        }
+        onesSprite.setTextureRect(sf::IntRect(21*ones,0,21,32));
+        tensSprite.setTextureRect(sf::IntRect (21*tens,0,21,32));
+        hundredsSprite.setTextureRect(sf::IntRect (21*hundreds,0,21,32));
+
+
+        if(negative){
+            gameWindow.draw(negSprite);
+        }
+        if(!won && !lost && !pauseBool) {
+            elapsed_seconds += chrono::system_clock::now() - start;
+
+            secs = ((int) elapsed_seconds.count()) % 60;
+            mins = ((int) elapsed_seconds.count()) / 60;
+            secOnes.setTextureRect(sf::IntRect(21 * (secs % 10), 0, 21, 32));
+            secTens.setTextureRect(sf::IntRect(21 * (secs / 10), 0, 21, 32));
+            minOnes.setTextureRect(sf::IntRect(21 * (mins % 10), 0, 21, 32));
+            minTens.setTextureRect(sf::IntRect(21 * (mins / 10), 0, 21, 32));
+        }
+        start = chrono::system_clock::now();
         gameWindow.clear(sf::Color::White);
         for(int i = 0; i < entities.size(); i++){
             gameWindow.draw(*entities.at(i));
         }
         gameWindow.display();
+
     }
+
 
 
 
