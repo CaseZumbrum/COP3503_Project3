@@ -214,6 +214,7 @@ string welcomeScreen(){
         while(welcomeWindow.pollEvent(event)) {
             if(event.type == sf::Event::Closed) {
                 welcomeWindow.close();
+                return "-1";
             }
             if (event.type == sf::Event::TextEntered){
 
@@ -247,6 +248,8 @@ string welcomeScreen(){
         }
         welcomeWindow.display();
     }
+    config.close();
+
     return username;
 }
 
@@ -265,7 +268,7 @@ void leaderBoard(){
     int mineCount = stoi(mineString);
     int width = colCount*16;
     int height = rowCount*16+50;
-    sf::RenderWindow welcomeWindow(sf::VideoMode(width, height ), "Leaderboard");
+    sf::RenderWindow leaderboardWindow(sf::VideoMode(width, height ), "Leaderboard");
     ifstream leaderReader("files/leaderboard.txt");
     string nameIndex;
     string timeIndex;
@@ -273,7 +276,7 @@ void leaderBoard(){
     int count = 1;
     while(getline(leaderReader,timeIndex,',')){
         getline(leaderReader,nameIndex);
-        leaderString += to_string(count) + ".\t" + timeIndex + "\t" + nameIndex + "\n\n";
+        leaderString += to_string(count) + ".\t" + timeIndex + "\t" + nameIndex.substr(1) + "\n\n";
         count++;
     }
 
@@ -295,22 +298,24 @@ void leaderBoard(){
     setText(title,width/2,height/2 - 120);
     entities.push_back(&title);
 
-    while(welcomeWindow.isOpen()) {
+    while(leaderboardWindow.isOpen()) {
         sf::Event event;
-        while (welcomeWindow.pollEvent(event)) {
+        while (leaderboardWindow.pollEvent(event)) {
             if (event.type == sf::Event::Closed) {
-                welcomeWindow.close();
+                leaderboardWindow.close();
             }
         }
-        welcomeWindow.clear(sf::Color::Blue); // credit to my friend
+        leaderboardWindow.clear(sf::Color::Blue); // credit to my friend
         for(int i = 0; i < entities.size(); i++){
-            welcomeWindow.draw(*entities.at(i));
+            leaderboardWindow.draw(*entities.at(i));
         }
-        welcomeWindow.display();
+        leaderboardWindow.display();
     }
+    config.close();
+    leaderReader.close();
 }
 
-void endleaderBoard(int sec, int min){
+void endleaderBoard(int sec, int min, string username){
     vector<sf::Drawable*> entities;
 
     ifstream config("files/config.cfg");
@@ -325,7 +330,7 @@ void endleaderBoard(int sec, int min){
     int mineCount = stoi(mineString);
     int width = colCount*16;
     int height = rowCount*16+50;
-    sf::RenderWindow welcomeWindow(sf::VideoMode(width, height ), "Leaderboard");
+    sf::RenderWindow leaderboardWindow(sf::VideoMode(width, height ), "Leaderboard");
     ifstream leaderReader("files/leaderboard.txt");
     string nameIndex;
     string timeIndex;
@@ -336,25 +341,53 @@ void endleaderBoard(int sec, int min){
     while(getline(leaderReader,timeIndex,',')){
         getline(leaderReader,nameIndex);
         times.push_back(timeIndex);
-        names.push_back(nameIndex);
+        names.push_back(nameIndex.substr(1));
         count++;
     }
 
+
     int position = -1;
+
     for(int i = 0; i < times.size(); i++){
-        if(min < stoi(times.at(i).substr(0,2)) && sec < stoi(times.at(i).substr(3,2))){
-            position = i;
+        if(min < stoi(times.at(i).substr(0,2)) || (min == stoi(times.at(i).substr(0,2)) && sec < stoi(times.at(i).substr(3,2)))){
+            position = i + 1;
             break;
         }
     }
-    cout << position << endl;
 
+    if(position != -1) {
+        for (int i = times.size() - 1; i >= position; i--) {
+            times.at(i) = times.at(i - 1);
+            names.at(i) = names.at(i - 1);
+        }
+        times.at(position - 1) = to_string(min).insert(0, 2 - to_string(min).size(), '0') + ":" +
+                                 to_string(sec).insert(0, 2 - to_string(sec).size(), '0');
+        names.at(position - 1) = username;
+    }
 
     for(int i = 1; i <= times.size(); i++){
-
-        leaderString += to_string(i) + ".\t" + times.at(i-1) + "\t" + names.at(i-1) + "\n\n";
+        if(i == position){
+            leaderString += to_string(i) + ".\t" + times.at(i-1) + "\t" + names.at(i-1) + "*\n\n";
+        }
+        else {
+            leaderString += to_string(i) + ".\t" + times.at(i - 1) + "\t" + names.at(i - 1) + "\n\n";
+        }
 
     }
+
+    config.close();
+    leaderReader.close();
+
+    string leaderStringOut = "";
+    for(int i = 1; i <= times.size(); i++){
+        leaderStringOut +=times.at(i-1) + ", " + names.at(i-1) + "\n";
+    }
+
+    ofstream leaderWriter("files/leaderboard.txt");
+    leaderWriter << leaderStringOut;
+    leaderWriter.close();
+
+
 
     sf::Font font;
     font.loadFromFile("files/font.ttf");
@@ -374,27 +407,30 @@ void endleaderBoard(int sec, int min){
     setText(title,width/2,height/2 - 120);
     entities.push_back(&title);
 
-    while(welcomeWindow.isOpen()) {
+    while(leaderboardWindow.isOpen()) {
         sf::Event event;
-        while (welcomeWindow.pollEvent(event)) {
+        while (leaderboardWindow.pollEvent(event)) {
             if (event.type == sf::Event::Closed) {
-                welcomeWindow.close();
+                leaderboardWindow.close();
             }
         }
-        welcomeWindow.clear(sf::Color::Blue); // credit to my friend
+        leaderboardWindow.clear(sf::Color::Blue); // credit to my friend
         for(int i = 0; i < entities.size(); i++){
-            welcomeWindow.draw(*entities.at(i));
+            leaderboardWindow.draw(*entities.at(i));
         }
-        welcomeWindow.display();
+        leaderboardWindow.display();
     }
+
+
 }
 
 
 
 int main() {
-    //string username = welcomeScreen();
-    //cout << username << endl;
-
+    string username = welcomeScreen();
+    if(username == "-1"){
+        return 0;
+    }
     auto start = std::chrono::system_clock::now();
     std::chrono::duration<double> elapsed_seconds;
 
@@ -464,13 +500,13 @@ int main() {
 
     int secs;
     int mins;
-    sf::Sprite secOnes(assets.at("digits"));
+    sf::Sprite secOnes(assets.at("digits"),sf::IntRect(0,0,21,32));
     secOnes.setPosition(colCount*32 - 54 + 21,32*(rowCount+0.5)+16);
-    sf::Sprite secTens(assets.at("digits"));
+    sf::Sprite secTens(assets.at("digits"),sf::IntRect(0,0,21,32));
     secTens.setPosition(colCount*32 - 54,32*(rowCount+0.5)+16);
-    sf::Sprite minOnes(assets.at("digits"));
+    sf::Sprite minOnes(assets.at("digits"),sf::IntRect(0,0,21,32));
     minOnes.setPosition(colCount*32 - 97 + 21,32*(rowCount+0.5)+16);
-    sf::Sprite minTens(assets.at("digits"));
+    sf::Sprite minTens(assets.at("digits"),sf::IntRect(0,0,21,32));
     minTens.setPosition(colCount*32 - 97,32*(rowCount+0.5)+16);
     entities.push_back(&secOnes);
     entities.push_back(&secTens);
@@ -484,8 +520,8 @@ int main() {
             if(event.type == sf::Event::Closed) {
                 gameWindow.close();
             }
-            if(!won && !lost) {
-                if (event.type == sf::Event::MouseButtonPressed) {
+            if (event.type == sf::Event::MouseButtonPressed) {
+                if(!won && !lost) {
                     if (event.mouseButton.button == 0) {
                         if ((int) event.mouseButton.x / 32 < colCount && (int) event.mouseButton.y / 32 < rowCount) {
                             if (firstClick) {
@@ -494,7 +530,7 @@ int main() {
                                 firstClick = false;
                             }
                             lost = !(b.click((int) event.mouseButton.x / 32, (int) event.mouseButton.y / 32));
-                            if(lost){
+                            if (lost) {
                                 face.setTexture(assets.at("lose"));
                             }
                         } else if (!firstClick && (debug.getPosition().x <= event.mouseButton.x &&
@@ -509,63 +545,60 @@ int main() {
                             b.togglePause();
                             pauseBool = !pauseBool;
                         }
-                        else if ((leaderboard.getPosition().x <= event.mouseButton.x &&
-                                  leaderboard.getPosition().x >= event.mouseButton.x - 64 &&
-                                  leaderboard.getPosition().y <= event.mouseButton.y &&
-                                  leaderboard.getPosition().y >= event.mouseButton.y - 64)) {
+                    } else if (event.mouseButton.button == 1 && !firstClick) {
+                        if ((int) event.mouseButton.x / 32 < colCount && (int) event.mouseButton.y / 32 < rowCount) {
+                            b.placeFlag((int) event.mouseButton.x / 32, (int) event.mouseButton.y / 32);
+                            won = b.checkWin();
+                            if (won) {
+                                face.setTexture(assets.at("win"));
 
-                            if(!pauseBool) {
-                                b.togglePause();
+                                if (b.numFlags < 0) {
+                                    negative = true;
+                                    ones = -1 * b.numFlags % 10;
+                                    tens = -1 * ((int) b.numFlags / 10) % 10;
+                                    hundreds = -1 * (int) b.numFlags / 100;
+                                } else {
+                                    negative = false;
+                                    ones = b.numFlags % 10;
+                                    tens = ((int) b.numFlags / 10) % 10;
+                                    hundreds = (int) b.numFlags / 100;
+
+                                }
+                                onesSprite.setTextureRect(sf::IntRect(21 * ones, 0, 21, 32));
+                                tensSprite.setTextureRect(sf::IntRect(21 * tens, 0, 21, 32));
+                                hundredsSprite.setTextureRect(sf::IntRect(21 * hundreds, 0, 21, 32));
                                 gameWindow.clear(sf::Color::White);
                                 for (int i = 0; i < entities.size(); i++) {
                                     gameWindow.draw(*entities.at(i));
                                 }
                                 gameWindow.display();
-                                leaderBoard();
-                                b.togglePause();
-                            }
-                            else{
-                                leaderBoard();
-                            }
-                            start = chrono::system_clock::now();
-
-                        }
-                    } else if (event.mouseButton.button == 1) {
-                        if ((int) event.mouseButton.x / 32 < colCount && (int) event.mouseButton.y / 32 < rowCount) {
-                            b.placeFlag((int) event.mouseButton.x / 32, (int) event.mouseButton.y / 32);
-                            won = b.checkWin();
-                            if(won){
-                                face.setTexture(assets.at("win"));
-
-                                if(b.numFlags < 0){
-                                    negative = true;
-                                    ones =-1* b.numFlags % 10;
-                                    tens = -1* ((int) b.numFlags / 10)%10;
-                                    hundreds = -1* (int) b.numFlags / 100;
-                                }
-                                else{
-                                    negative = false;
-                                    ones = b.numFlags % 10;
-                                    tens = ((int) b.numFlags / 10)%10;
-                                    hundreds = (int) b.numFlags / 100;
-
-                                }
-                                onesSprite.setTextureRect(sf::IntRect(21*ones,0,21,32));
-                                tensSprite.setTextureRect(sf::IntRect (21*tens,0,21,32));
-                                hundredsSprite.setTextureRect(sf::IntRect (21*hundreds,0,21,32));
-                                gameWindow.clear(sf::Color::White);
-                                for(int i = 0; i < entities.size(); i++){
-                                    gameWindow.draw(*entities.at(i));
-                                }
-                                gameWindow.display();
-                                endleaderBoard(((int) elapsed_seconds.count()) % 60,((int) elapsed_seconds.count()) / 60);
+                                endleaderBoard(((int) elapsed_seconds.count()) % 60,
+                                               ((int) elapsed_seconds.count()) / 60, username);
                             }
                         }
                     }
                 }
+                if (event.mouseButton.button == 0 && (leaderboard.getPosition().x <= event.mouseButton.x &&
+                                                      leaderboard.getPosition().x >= event.mouseButton.x - 64 &&
+                                                      leaderboard.getPosition().y <= event.mouseButton.y &&
+                                                      leaderboard.getPosition().y >= event.mouseButton.y - 64)) {
+                    if(!pauseBool) {
+                        b.togglePause();
+                        gameWindow.clear(sf::Color::White);
+                        for (int i = 0; i < entities.size(); i++) {
+                            gameWindow.draw(*entities.at(i));
+                        }
+                        gameWindow.display();
+                        leaderBoard();
+                        b.togglePause();
+                    }
+                    else{
+                        leaderBoard();
+                    }
+                    start = chrono::system_clock::now();
 
-
-            }
+                }
+                }
         }
 
         //flag counter
@@ -590,7 +623,7 @@ int main() {
         if(negative){
             gameWindow.draw(negSprite);
         }
-        if(!won && !lost && !pauseBool) {
+        if(!won && !lost && !pauseBool && !firstClick) {
             elapsed_seconds += chrono::system_clock::now() - start;
 
             secs = ((int) elapsed_seconds.count()) % 60;
@@ -611,6 +644,6 @@ int main() {
 
 
 
-
+    config.close();
     return 0;
 }
