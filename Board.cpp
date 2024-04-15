@@ -28,7 +28,7 @@ void Board::reveal(int x, int y) {
         for(int k = -1; k <=1; k++) {
             for (int l = -1; l <= 1; l++) {
                 if (y + k >= 0 && y + k < this->row && x + l >= 0 && x + l < this->col) {
-                    if (!(k == 0 && l == 0) && game.at(y+k).at(x+l).coveredBool) {
+                    if (!(k == 0 && l == 0) && game.at(y+k).at(x+l).coveredBool && !game.at(y+k).at(x+l).flagBool) {
                         this->reveal(x+l,y+k);
 
                     }

@@ -221,7 +221,7 @@ string welcomeScreen(){
                 if(event.text.unicode == 8){
                     username = username.substr(0,username.size()-1);
                 }
-                else if(event.text.unicode == 13){
+                else if(event.text.unicode == 13 && username != ""){
                     welcomeWindow.close();
                 }
                 else {
