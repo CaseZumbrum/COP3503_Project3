@@ -425,12 +425,7 @@ void endleaderBoard(int sec, int min, string username){
 }
 
 
-
-int main() {
-    string username = welcomeScreen();
-    if(username == "-1"){
-        return 0;
-    }
+int gameScreen(string username){
     auto start = std::chrono::system_clock::now();
     std::chrono::duration<double> elapsed_seconds;
 
@@ -533,6 +528,20 @@ int main() {
                             if (lost) {
                                 face.setTexture(assets.at("lose"));
                             }
+                            won = b.checkWin();
+                            if (won) {
+                                face.setTexture(assets.at("win"));
+                                onesSprite.setTextureRect(sf::IntRect(21 * 0, 0, 21, 32));
+                                tensSprite.setTextureRect(sf::IntRect(21 * 0, 0, 21, 32));
+                                hundredsSprite.setTextureRect(sf::IntRect(21 * 0, 0, 21, 32));
+                                gameWindow.clear(sf::Color::White);
+                                for (int i = 0; i < entities.size(); i++) {
+                                    gameWindow.draw(*entities.at(i));
+                                }
+                                gameWindow.display();
+                                endleaderBoard(((int) elapsed_seconds.count()) % 60,
+                                               ((int) elapsed_seconds.count()) / 60, username);
+                            }
                         } else if (!firstClick && (debug.getPosition().x <= event.mouseButton.x &&
                                                    debug.getPosition().x >= event.mouseButton.x - 64 &&
                                                    debug.getPosition().y <= event.mouseButton.y &&
@@ -545,36 +554,11 @@ int main() {
                             b.togglePause();
                             pauseBool = !pauseBool;
                         }
+
+
                     } else if (event.mouseButton.button == 1 && !firstClick) {
                         if ((int) event.mouseButton.x / 32 < colCount && (int) event.mouseButton.y / 32 < rowCount) {
                             b.placeFlag((int) event.mouseButton.x / 32, (int) event.mouseButton.y / 32);
-                            won = b.checkWin();
-                            if (won) {
-                                face.setTexture(assets.at("win"));
-
-                                if (b.numFlags < 0) {
-                                    negative = true;
-                                    ones = -1 * b.numFlags % 10;
-                                    tens = -1 * ((int) b.numFlags / 10) % 10;
-                                    hundreds = -1 * (int) b.numFlags / 100;
-                                } else {
-                                    negative = false;
-                                    ones = b.numFlags % 10;
-                                    tens = ((int) b.numFlags / 10) % 10;
-                                    hundreds = (int) b.numFlags / 100;
-
-                                }
-                                onesSprite.setTextureRect(sf::IntRect(21 * ones, 0, 21, 32));
-                                tensSprite.setTextureRect(sf::IntRect(21 * tens, 0, 21, 32));
-                                hundredsSprite.setTextureRect(sf::IntRect(21 * hundreds, 0, 21, 32));
-                                gameWindow.clear(sf::Color::White);
-                                for (int i = 0; i < entities.size(); i++) {
-                                    gameWindow.draw(*entities.at(i));
-                                }
-                                gameWindow.display();
-                                endleaderBoard(((int) elapsed_seconds.count()) % 60,
-                                               ((int) elapsed_seconds.count()) / 60, username);
-                            }
                         }
                     }
                 }
@@ -598,7 +582,15 @@ int main() {
                     start = chrono::system_clock::now();
 
                 }
+                else if ((face.getPosition().x <= event.mouseButton.x &&
+                          face.getPosition().x >= event.mouseButton.x - 64 &&
+                          face.getPosition().y <= event.mouseButton.y &&
+                          face.getPosition().y >= event.mouseButton.y - 64)) {
+                    gameWindow.close();
+                    gameScreen(username);
+                    return 0;
                 }
+            }
         }
 
         //flag counter
@@ -646,4 +638,13 @@ int main() {
 
     config.close();
     return 0;
+}
+
+
+int main() {
+    string username = welcomeScreen();
+    if(username == "-1"){
+        return 0;
+    }
+    return gameScreen(username);
 }

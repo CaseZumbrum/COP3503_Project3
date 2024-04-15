@@ -6,7 +6,7 @@
 #include <cstdlib>
 
 bool Board::click(int x, int y) {
-    if(!this->paused) {
+    if(!this->paused && !this->game.at(y).at(x).flagBool) {
         if (this->game.at(y).at(x).bombBool) {
             this->game.at(y).at(x).reveal(this->assets);
             return false;
@@ -16,13 +16,16 @@ bool Board::click(int x, int y) {
             return true;
         }
     }
+    return true;
 }
 
 void Board::reveal(int x, int y) {
     if(this->game.at(y).at(x).flagBool){
-        this->numFlags += this->game.at(y).at(x).toggleFlag(this->assets.at("flag"),this->assets.at("covered"),this->assets.at("mine"));
+        //this->numFlags += this->game.at(y).at(x).toggleFlag(this->assets.at("flag"),this->assets.at("covered"),this->assets.at("mine"));
     }
-    this->game.at(y).at(x).reveal(this->assets);
+    else {
+        this->game.at(y).at(x).reveal(this->assets);
+    }
 
     if(this->game.at(y).at(x).neighboors == 0){
         for(int k = -1; k <=1; k++) {
@@ -93,19 +96,23 @@ void Board::placeFlag(int x, int y) {
 }
 
 bool Board::checkWin() {
-    if(this->numFlags == 0){
+
         for(int i = 0; i < this->row; i++) {
             for (int j = 0; j < this->col; j++) {
-                if(!(!this->game.at(i).at(j).bombBool || this->game.at(i).at(j).flagBool)){
+                if(!this->game.at(i).at(j).bombBool && this->game.at(i).at(j).coveredBool){
                     return false;
                 }
             }
         }
+    for(int i = 0; i < this->row; i++) {
+        for (int j = 0; j < this->col; j++) {
+            if(this->game.at(i).at(j).bombBool && !this->game.at(i).at(j).flagBool){
+                this->game.at(i).at(j).toggleFlag(this->assets.at("flag"),this->assets.at("covered"),this->assets.at("mine"));
+            }
+        }
+    }
         return true;
-    }
-    else{
-        return false;
-    }
+
 }
 
 void Board::togglePause() {
